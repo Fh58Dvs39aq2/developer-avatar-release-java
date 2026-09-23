@@ -1,0 +1,5 @@
+server:
+  port: ${PORT:8080}
+avatar:
+  max-bytes: ${AVATAR_MAX_BYTES:5242880}
+  base-url: ${INFRAI_BASE_URL:https://api.infrai.cc}

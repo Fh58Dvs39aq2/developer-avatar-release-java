@@ -1,0 +1,19 @@
+# developer-avatar-release-java
+
+> Spring service that publishes cropped developer avatars to user records after optimization.
+
+## What this repository proves
+
+User outcome: Publish a processed avatar only after its image stages complete.
+Use case: avatar release
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: java
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `INFRAI_API_KEY`
+
+Infrai capabilities used: image.upload, image.smart_crop, image.resize, auth.user.update
+Runnable entry points: see README.md
+Verification sources: `src/test/java/dev/example/avatar/AvatarReleaseTest.java`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt

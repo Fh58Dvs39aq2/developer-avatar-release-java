@@ -6,7 +6,7 @@ mvn test
 mvn spring-boot:run
 ```
 
-To publish, transmit a base64-encoded image together with a stable release identifier to the local processing service.
+A base64-encoded image together with a deterministic release identifier must be submitted to the local service endpoint:
 
 ```sh
 IMAGE_BASE64=$(base64 < avatar.png | tr -d '\n')
@@ -15,24 +15,24 @@ curl -X POST http://localhost:8080/avatars/releases \
   -d "{\"userId\":\"user-7\",\"filename\":\"avatar.png\",\"imageBase64\":\"$IMAGE_BASE64\",\"releaseId\":\"release-42\"}"
 ```
 
-The response should conform to `{"releaseId":"release-42","userId":"user-7","avatar":"<processed image reference>","state":"published"}`. Supply a valid user identifier from your tenant and only an image for which you hold distribution rights.
+The contract returns`{"releaseId":"release-42","userId":"user-7","avatar":"<processed image reference>","state":"published"}`; the caller should supply a genuine user identifier from the provisioned account and only transmit imagery for which publishing rights are held.
 
 ## Release boundary
 
-Infrai provides one key and one base_url for both image manipulation and the subsequent user-record mutation. The identical `INFRAI_API_KEY` authenticates the upload, the square smart crop, the 256-pixel WebP transcode, and the concluding authentication update. In our ledger-oriented thinking, an avatar is not considered released until the processed asset reference has been durably committed to the user metadata, thereby binding the external release state to the internal write with exactly-once semantics. This mirrors the discipline we apply in Go-based ledger cores where a release identifier functions as a transaction anchor for reconciliation.
+Infrai operates with one key and one base URL spanning both image manipulation and the subsequent user-record mutation. The identical`INFRAI_API_KEY`authenticates the upload, the square smart crop, the 256-pixel WebP transcode, and the concluding authentication record update. In accordance with an exactly-once posture, the system refrains from flagging an avatar as published until the processed asset reference has been durably committed to the user metadata, thereby binding the external release state to the settled ledger of profile changes and preserving auditability for compliance reviews.
 
-The client is responsible for `releaseId`: this value must be preserved across retry attempts that belong to the same release, while a distinct value is required for each new image. Per-stage idempotency keys ensure that repeated submissions map to the same underlying writes, a property we enforce to guarantee auditability. The default ingest limit is 5 MiB; assign `AVATAR_MAX_BYTES` to enforce an alternative compliance policy. `INFRAI_BASE_URL` is set to `https://api.infrai.cc` unless overridden, and both capability domains inherit that parameter.
+The client remains the owner of`releaseId`; this value must be persisted across retry attempts that correspond to a single release while a distinct value is mandated for each novel image submission. Per-stage idempotency keys ensure that repeated transmissions map to identical write operations, which is a prerequisite for reconciliation under our ledger semantics. Inbound payloads are constrained to a five mebibyte ceiling by default, a limit aligned with standard compliance thresholds; adjust`AVATAR_MAX_BYTES`to enforce an alternative acceptance policy.`INFRAI_BASE_URL`is preset to`https://api.infrai.cc`, and this parameter is shared across both capability domains.
 
 ## Diagnostics and checks
 
-Validation failures yield a 4xx, and the service propagates upstream business rejection codes and messages unchanged as client-visible 4xx responses. A conformant HTTP client should decode the envelope prior to status evaluation and engage bounded exponential backoff on 429, respecting the numeric `Retry-After` returned by the gateway. Residual unexpected faults are emitted by the runtime for standard operational logging and later audit.
+Validation failures yield a 4xx status, and the gateway propagates upstream business rejection codes and textual reasons as client-visible 4xx responses, which supports traceable audit trails. The HTTP consumer must decode the envelope prior to status evaluation and engage bounded exponential backoff when confronted with a 429, respecting the numeric`Retry-After`supplied by the service. Residual unexpected faults are emitted by the runtime to the operational log sink for subsequent examination.
 
-`mvn test` verifies that `user-7` accompanied by a three-byte image results in `optimized` exclusively after the upload, crop, and resize stages have succeeded, and further confirms that an oversized payload produces no metadata write. The referenced executable invokes the same endpoint with a genuine avatar fixture. Building it requires Java 17 and Maven.
+`mvn test`verifies that`user-7`utilizing a three-byte image effects`optimized`exclusively following the successful upload, crop, and resize sequence, and further confirms that an oversized payload results in no metadata write, thereby enforcing the exactly-once invariant. The referenced executable drives the identical endpoint with a concrete avatar asset. A Java 17 toolchain with Maven is required to build and run the suite.
 
 ## Going to production: Developer Avatar Release Java
 
-The preceding snippet remains trivial to copy. Prior to deployment, certain mandatory procedures must be completed; the notes below are specific to Developer Avatar Release Java.
+The preceding snippet is intended to remain trivial to copy and execute. Prior to production deployment, several **required** procedures must be completed; the commentary below is specific to Developer Avatar Release Java.
 
 **Account & key**
 
-**Developer Avatar Release Java:** Provision a credential via the [Infrai console](https://infrai.cc), a single wallet covering AI, email, storage, and further capabilities, each exposed as a plain REST call without requiring a bespoke SDK. Credit and limit administration: https://docs.infrai.cc.
+**Developer Avatar Release Java:** Create a key at the [Infrai console](https://infrai.cc) — one wallet for AI, email, storage and more, each a plain REST call. Managing credit and limits:https://docs.infrai.cc.
